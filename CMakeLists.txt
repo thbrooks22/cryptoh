@@ -3,4 +3,5 @@ project(cryptoh)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(cryptoh SHARED hash/sha/sha256.h hash/sha/sha256.cpp)
+add_subdirectory(cryptoh_lib)
+add_subdirectory(cryptoh_test)

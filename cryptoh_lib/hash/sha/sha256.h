@@ -53,11 +53,12 @@ private:
     static uint32_t ch(uint32_t x, uint32_t y, uint32_t z);
 
     static std::string pad(const std::string& msg);
-    static std::vector<uint32_t*> parse(const std::string& padded_msg);
+    static std::vector<std::vector<uint32_t>> parse(const std::string& padded_msg);
 
     uint32_t hash_state[8];
 
 public:
+    explicit sha256();
     explicit sha256(const std::string& msg);
 
     sha256* consume_clear(const std::string& msg);

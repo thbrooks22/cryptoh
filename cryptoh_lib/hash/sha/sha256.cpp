@@ -3,6 +3,8 @@
 //
 
 #include <bit>
+#include <sstream>
+#include <iomanip>
 #include "sha256.h"
 
 uint32_t sha256::small_sig_0(uint32_t x) {
@@ -42,7 +44,7 @@ std::string sha256::pad(const std::string& msg) {
     }
 
     std::string padding = sha256::PAD_BUFFER + std::string(pad_bits_needed / 8, sha256::PAD);
-    uint8_t shift = sha256::LOG_MAX_MESSAGE_BITS;
+    uint32_t shift = sha256::LOG_MAX_MESSAGE_BITS;
 
     while (shift > 0) {
         shift -= 8;
@@ -52,16 +54,16 @@ std::string sha256::pad(const std::string& msg) {
     return msg + padding;
 }
 
-std::vector<uint32_t*> sha256::parse(const std::string &padded_msg) {
-    std::vector<uint32_t*> vec;
+std::vector<std::vector<uint32_t>> sha256::parse(const std::string &padded_msg) {
+    std::vector<std::vector<uint32_t>> vec;
 
     // i iterates over 512-bit blocks
     for (uint64_t i = 0; i < padded_msg.length(); i += sha256::BLOCK_SIZE) {
-        uint32_t word[16];
+        std::vector<uint32_t> word(sha256::BLOCK_SIZE / sha256::WORD_SIZE);
 
         // j iterates over 16 32-bit (4-byte) words
         for (uint64_t j = 0; j < sha256::BLOCK_SIZE / sha256::WORD_SIZE; j++) {
-            std::string w = padded_msg.substr(i + j, 4);
+            std::string w = padded_msg.substr(i + j * 4, 4);
             word[j] = (unsigned char) w[0] << 24 |
                     (unsigned char) w[1] << 16 |
                     (unsigned char) w[2] << 8 |
@@ -70,7 +72,12 @@ std::vector<uint32_t*> sha256::parse(const std::string &padded_msg) {
 
         vec.push_back(word);
     }
+
     return vec;
+}
+
+sha256::sha256() {
+    this->clear_state();
 }
 
 sha256::sha256(const std::string &msg) {
@@ -84,10 +91,10 @@ sha256* sha256::consume_clear(const std::string &msg) {
 }
 
 sha256* sha256::consume(const std::string &msg) {
-    std::vector<uint32_t*> preprocessed_msg = sha256::parse(sha256::pad(msg));
+    std::vector<std::vector<uint32_t>> preprocessed_msg = sha256::parse(sha256::pad(msg));
     uint32_t working_vars[8];
 
-    for (uint32_t* msg_block : preprocessed_msg) {
+    for (std::vector<uint32_t> &msg_block : preprocessed_msg) {
 
         // Prepare message schedule for this message block
         uint32_t message_schedule[sha256::LOG_MAX_MESSAGE_BITS];
@@ -144,11 +151,13 @@ void sha256::clear_state() {
 }
 
 std::string sha256::digest() {
-    std::string dig;
-    for (uint32_t i = 0; i < 8; i++) {
-        // TODO
+    std::stringstream stream;
+
+    for (uint32_t state : this->hash_state) {
+        stream << std::setfill ('0') << std::setw(sizeof(uint32_t) * 2)
+               << std::hex << state;
     }
-    return dig;
+    return stream.str();
 }
 
 

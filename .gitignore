@@ -1,3 +1,4 @@
 .idea
+cryptoh_test/.lib
 .DS_Store
 cmake-build-debug
