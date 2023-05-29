@@ -40,10 +40,10 @@ std::string sha256::pad(const std::string& msg) {
     if (base_bits_with_buffer > sha256::PAD_LIMIT) {
         pad_bits_needed = sha256::PAD_LIMIT + sha256::BLOCK_SIZE - base_bits_with_buffer;
     } else {
-        pad_bits_needed = (sha256::PAD_LIMIT - base_bits_with_buffer);
+        pad_bits_needed = sha256::PAD_LIMIT - base_bits_with_buffer;
     }
 
-    std::string padding = sha256::PAD_BUFFER + std::string(pad_bits_needed / 8, sha256::PAD);
+    std::string padding = std::string(1, sha256::PAD_BUFFER) + std::string(pad_bits_needed / 8, sha256::PAD);
     uint32_t shift = sha256::LOG_MAX_MESSAGE_BITS;
 
     while (shift > 0) {
@@ -58,15 +58,15 @@ std::vector<std::vector<uint32_t>> sha256::parse(const std::string &padded_msg) 
     std::vector<std::vector<uint32_t>> vec;
 
     // i iterates over 512-bit blocks
-    for (uint64_t i = 0; i < padded_msg.length(); i += sha256::BLOCK_SIZE) {
+    for (uint64_t i = 0; i < padded_msg.length(); i += sha256::BLOCK_SIZE / 8) {
         std::vector<uint32_t> word(sha256::BLOCK_SIZE / sha256::WORD_SIZE);
 
         // j iterates over 16 32-bit (4-byte) words
         for (uint64_t j = 0; j < sha256::BLOCK_SIZE / sha256::WORD_SIZE; j++) {
             std::string w = padded_msg.substr(i + j * 4, 4);
-            word[j] = (unsigned char) w[0] << 24 |
-                    (unsigned char) w[1] << 16 |
-                    (unsigned char) w[2] << 8 |
+            word[j] = ((unsigned char) w[0] << 24) |
+                    ((unsigned char) w[1] << 16) |
+                    ((unsigned char) w[2] << 8) |
                     (unsigned char) w[3];
         }
 
@@ -111,9 +111,7 @@ sha256* sha256::consume(const std::string &msg) {
         }
 
         // Initialize the working variables for this message block
-        for (uint32_t set_it = 0; set_it < 8; set_it++) {
-            working_vars[set_it] = this->hash_state[set_it];
-        }
+        std::copy_n(this->hash_state, 8, working_vars);
 
         // Update the working variables
         for (uint32_t t = 0; t < sha256::LOG_MAX_MESSAGE_BITS; t++) {
